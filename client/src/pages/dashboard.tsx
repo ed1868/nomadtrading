@@ -8,6 +8,7 @@ import { PositionsList } from "@/components/positions-list";
 import { OptionsPositions } from "@/components/options-positions";
 import { Watchlist } from "@/components/watchlist";
 import { TradeHistory } from "@/components/trade-history";
+import { AITips } from "@/components/ai-tips";
 import type { Portfolio, StockQuote } from "@shared/schema";
 
 export default function Dashboard() {
@@ -44,6 +45,7 @@ export default function Dashboard() {
 
           {/* Right Column - Trading */}
           <div className="lg:col-span-4 space-y-6">
+            <AITips />
             <StockSearch onSelectStock={handleSelectStock} />
             <TradingPanel selectedStock={selectedStock} />
             <Watchlist onSelectStock={handleSelectStock} />

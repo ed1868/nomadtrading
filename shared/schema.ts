@@ -245,3 +245,6 @@ export const insertWatchlistSchema = z.object({
 export type InsertTrade = z.infer<typeof insertTradeSchema>;
 export type InsertOptionTrade = z.infer<typeof insertOptionTradeSchema>;
 export type InsertWatchlist = z.infer<typeof insertWatchlistSchema>;
+
+// Re-export chat models for OpenAI integration
+export * from "./models/chat";
