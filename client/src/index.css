@@ -2,7 +2,7 @@
 @tailwind components;
 @tailwind utilities;
 
-/* LIGHT MODE */
+/* LIGHT MODE - Professional Finance Theme */
 :root {
   --button-outline: rgba(0,0,0, .10);
   --badge-outline: rgba(0,0,0, .05);
@@ -14,82 +14,71 @@
   --elevate-1: rgba(0,0,0, .03);
   --elevate-2: rgba(0,0,0, .08);
 
-  --background: red; /*replace with H S L */
+  --background: 220 20% 97%;
+  --foreground: 220 20% 10%;
+  --border: 220 15% 88%;
 
-  --foreground: red; /*replace with H S L */
+  --card: 0 0% 100%;
+  --card-foreground: 220 20% 10%;
+  --card-border: 220 15% 90%;
 
-  --border: red; /*replace with H S L */
+  --sidebar: 220 25% 12%;
+  --sidebar-foreground: 220 10% 92%;
+  --sidebar-border: 220 20% 18%;
+  --sidebar-primary: 142 70% 45%;
+  --sidebar-primary-foreground: 0 0% 100%;
+  --sidebar-accent: 220 20% 18%;
+  --sidebar-accent-foreground: 220 10% 92%;
+  --sidebar-ring: 142 70% 45%;
 
-  --card: red; /*replace with H S L */
+  --popover: 0 0% 100%;
+  --popover-foreground: 220 20% 10%;
+  --popover-border: 220 15% 88%;
 
-  --card-foreground: red; /*replace with H S L */
+  --primary: 142 70% 45%;
+  --primary-foreground: 0 0% 100%;
 
-  --card-border: red; /*replace with H S L */
+  --secondary: 220 15% 92%;
+  --secondary-foreground: 220 20% 25%;
 
-  --sidebar: red; /*replace with H S L */
+  --muted: 220 15% 94%;
+  --muted-foreground: 220 10% 45%;
 
-  --sidebar-foreground: red; /*replace with H S L */
+  --accent: 220 15% 92%;
+  --accent-foreground: 220 20% 25%;
 
-  --sidebar-border: red; /*replace with H S L */
+  --destructive: 0 72% 51%;
+  --destructive-foreground: 0 0% 100%;
 
-  --sidebar-primary: red; /*replace with H S L */
+  --input: 220 15% 85%;
+  --ring: 142 70% 45%;
+  
+  --chart-1: 142 70% 45%;
+  --chart-2: 199 89% 48%;
+  --chart-3: 280 65% 60%;
+  --chart-4: 35 92% 50%;
+  --chart-5: 0 72% 51%;
 
-  --sidebar-primary-foreground: red; /*replace with H S L */
-
-  --sidebar-accent: red; /*replace with H S L */
-
-  --sidebar-accent-foreground: red; /*replace with H S L */
-
-  --sidebar-ring: red; /*replace with H S L */
-
-  --popover: red; /*replace with H S L */
-
-  --popover-foreground: red; /*replace with H S L */
-
-  --popover-border: red; /*replace with H S L */
-
-  --primary: red; /*replace with H S L */
-
-  --primary-foreground: red; /*replace with H S L */
-
-  --secondary: red; /*replace with H S L */
-
-  --secondary-foreground: red; /*replace with H S L */
-
-  --muted: red; /*replace with H S L */
-
-  --muted-foreground: red; /*replace with H S L */
-
-  --accent: red; /*replace with H S L */
-
-  --accent-foreground: red; /*replace with H S L */
-
-  --destructive: red; /*replace with H S L */
-
-  --destructive-foreground: red; /*replace with H S L */
-
-  --input: red; /*replace with H S L */
-  --ring: red; /*replace with H S L */
-  --chart-1: red; /*replace with H S L */
-  --chart-2: red; /*replace with H S L */
-  --chart-3: red; /*replace with H S L */
-  --chart-4: red; /*replace with H S L */
-  --chart-5: red; /*replace with H S L */
-
-  --font-sans: 'Inter', sans-serif;
+  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
   --font-serif: Georgia, serif;
-  --font-mono: Menlo, monospace;
-  --radius: .5rem; /* 8px */
-  --shadow-2xs: 0px 2px 0px 0px hsl(202.8169 89.1213% 53.1373% / 0.00); /*replace with H S L */
-  --shadow-xs: 0px 2px 0px 0px hsl(202.8169 89.1213% 53.1373% / 0.00); /*replace with H S L */
-  --shadow-sm: 0px 2px 0px 0px hsl(202.8169 89.1213% 53.1373% / 0.00), 0px 1px 2px -1px hsl(202.8169 89.1213% 53.1373% / 0.00);
-  --shadow: 0px 2px 0px 0px hsl(202.8169 89.1213% 53.1373% / 0.00), 0px 1px 2px -1px hsl(202.8169 89.1213% 53.1373% / 0.00);
-  --shadow-md: 0px 2px 0px 0px hsl(202.8169 89.1213% 53.1373% / 0.00), 0px 2px 4px -1px hsl(202.8169 89.1213% 53.1373% / 0.00);
-  --shadow-lg: 0px 2px 0px 0px hsl(202.8169 89.1213% 53.1373% / 0.00), 0px 4px 6px -1px hsl(202.8169 89.1213% 53.1373% / 0.00);
-  --shadow-xl: 0px 2px 0px 0px hsl(202.8169 89.1213% 53.1373% / 0.00), 0px 8px 10px -1px hsl(202.8169 89.1213% 53.1373% / 0.00);
-  --shadow-2xl: 0px 2px 0px 0px hsl(202.8169 89.1213% 53.1373% / 0.00);
+  --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
+  --radius: .5rem;
+  --shadow-2xs: 0px 1px 2px 0px rgba(0, 0, 0, 0.03);
+  --shadow-xs: 0px 1px 3px 0px rgba(0, 0, 0, 0.04);
+  --shadow-sm: 0px 2px 4px -1px rgba(0, 0, 0, 0.05), 0px 1px 2px -1px rgba(0, 0, 0, 0.03);
+  --shadow: 0px 4px 6px -2px rgba(0, 0, 0, 0.05), 0px 2px 4px -2px rgba(0, 0, 0, 0.03);
+  --shadow-md: 0px 6px 10px -3px rgba(0, 0, 0, 0.06), 0px 3px 6px -2px rgba(0, 0, 0, 0.04);
+  --shadow-lg: 0px 10px 15px -4px rgba(0, 0, 0, 0.08), 0px 4px 8px -3px rgba(0, 0, 0, 0.04);
+  --shadow-xl: 0px 16px 24px -6px rgba(0, 0, 0, 0.1), 0px 8px 16px -4px rgba(0, 0, 0, 0.05);
+  --shadow-2xl: 0px 24px 48px -12px rgba(0, 0, 0, 0.15);
   --tracking-normal: 0em;
   --spacing: 0.25rem;
+
+  /* Trading specific colors */
+  --gain: 142 70% 45%;
+  --gain-foreground: 142 70% 25%;
+  --loss: 0 72% 51%;
+  --loss-foreground: 0 72% 35%;
 
   /* Automatically computed borders - intensity can be controlled by the user by the --opaque-button-border-intensity setting */
 
@@ -132,78 +121,65 @@
   --elevate-1: rgba(255,255,255, .04);
   --elevate-2: rgba(255,255,255, .09);
 
-  --background: red; /*replace with H S L */
+  --background: 220 25% 6%;
+  --foreground: 220 10% 92%;
+  --border: 220 20% 15%;
 
-  --foreground: red; /*replace with H S L */
+  --card: 220 25% 9%;
+  --card-foreground: 220 10% 92%;
+  --card-border: 220 20% 14%;
 
-  --border: red; /*replace with H S L */
+  --sidebar: 220 25% 5%;
+  --sidebar-foreground: 220 10% 90%;
+  --sidebar-border: 220 20% 12%;
+  --sidebar-primary: 142 70% 45%;
+  --sidebar-primary-foreground: 0 0% 100%;
+  --sidebar-accent: 220 20% 12%;
+  --sidebar-accent-foreground: 220 10% 90%;
+  --sidebar-ring: 142 70% 45%;
 
-  --card: red; /*replace with H S L */
+  --popover: 220 25% 9%;
+  --popover-foreground: 220 10% 92%;
+  --popover-border: 220 20% 15%;
 
-  --card-foreground: red; /*replace with H S L */
+  --primary: 142 70% 45%;
+  --primary-foreground: 0 0% 100%;
 
-  --card-border: red; /*replace with H S L */
+  --secondary: 220 20% 15%;
+  --secondary-foreground: 220 10% 85%;
 
-  --sidebar: red; /*replace with H S L */
+  --muted: 220 20% 12%;
+  --muted-foreground: 220 10% 55%;
 
-  --sidebar-foreground: red; /*replace with H S L */
+  --accent: 220 20% 15%;
+  --accent-foreground: 220 10% 85%;
 
-  --sidebar-border: red; /*replace with H S L */
-
-  --sidebar-primary: red; /*replace with H S L */
-
-  --sidebar-primary-foreground: red; /*replace with H S L */
-
-  --sidebar-accent: red; /*replace with H S L */
-
-  --sidebar-accent-foreground: red; /*replace with H S L */
-
-  --sidebar-ring: red; /*replace with H S L */
-
-  --popover: red; /*replace with H S L */
-
-  --popover-foreground: red; /*replace with H S L */
-
-  --popover-border: red; /*replace with H S L */
-
-  --primary: red; /*replace with H S L */
-
-  --primary-foreground: red; /*replace with H S L */
-
-  --secondary: red; /*replace with H S L */
-
-  --secondary-foreground: red; /*replace with H S L */
-
-  --muted: red; /*replace with H S L */
-
-  --muted-foreground: red; /*replace with H S L */
-
-  --accent: red; /*replace with H S L */
-
-  --accent-foreground: red; /*replace with H S L */
-
-  --destructive: red; /*replace with H S L */
-
-  --destructive-foreground: red; /*replace with H S L */
+  --destructive: 0 72% 51%;
+  --destructive-foreground: 0 0% 100%;
 
   /* Used as the border around inputs. Dark mode: Should be a border that is light enough to have high contrast when rendered on a --card background. More contrast than standard --border */
-  --input: red; /*replace with H S L */
-  --ring: red; /*replace with H S L */
-  --chart-1: red; /*replace with H S L */
-  --chart-2: red; /*replace with H S L */
-  --chart-3: red; /*replace with H S L */
-  --chart-4: red; /*replace with H S L */
-  --chart-5: red; /*replace with H S L */
+  --input: 220 20% 22%;
+  --ring: 142 70% 45%;
+  --chart-1: 142 70% 50%;
+  --chart-2: 199 89% 55%;
+  --chart-3: 280 65% 65%;
+  --chart-4: 35 92% 55%;
+  --chart-5: 0 72% 55%;
 
-  --shadow-2xs: 0px 2px 0px 0px hsl(202.8169 89.1213% 53.1373% / 0.00);
-  --shadow-xs: 0px 2px 0px 0px hsl(202.8169 89.1213% 53.1373% / 0.00);
-  --shadow-sm: 0px 2px 0px 0px hsl(202.8169 89.1213% 53.1373% / 0.00), 0px 1px 2px -1px hsl(202.8169 89.1213% 53.1373% / 0.00);
-  --shadow: 0px 2px 0px 0px hsl(202.8169 89.1213% 53.1373% / 0.00), 0px 1px 2px -1px hsl(202.8169 89.1213% 53.1373% / 0.00);
-  --shadow-md: 0px 2px 0px 0px hsl(202.8169 89.1213% 53.1373% / 0.00), 0px 2px 4px -1px hsl(202.8169 89.1213% 53.1373% / 0.00);
-  --shadow-lg: 0px 2px 0px 0px hsl(202.8169 89.1213% 53.1373% / 0.00), 0px 4px 6px -1px hsl(202.8169 89.1213% 53.1373% / 0.00);
-  --shadow-xl: 0px 2px 0px 0px hsl(202.8169 89.1213% 53.1373% / 0.00), 0px 8px 10px -1px hsl(202.8169 89.1213% 53.1373% / 0.00);
-  --shadow-2xl: 0px 2px 0px 0px hsl(202.8169 89.1213% 53.1373% / 0.00);
+  --shadow-2xs: 0px 1px 2px 0px rgba(0, 0, 0, 0.2);
+  --shadow-xs: 0px 1px 3px 0px rgba(0, 0, 0, 0.25);
+  --shadow-sm: 0px 2px 4px -1px rgba(0, 0, 0, 0.3), 0px 1px 2px -1px rgba(0, 0, 0, 0.2);
+  --shadow: 0px 4px 6px -2px rgba(0, 0, 0, 0.3), 0px 2px 4px -2px rgba(0, 0, 0, 0.2);
+  --shadow-md: 0px 6px 10px -3px rgba(0, 0, 0, 0.35), 0px 3px 6px -2px rgba(0, 0, 0, 0.25);
+  --shadow-lg: 0px 10px 15px -4px rgba(0, 0, 0, 0.4), 0px 4px 8px -3px rgba(0, 0, 0, 0.25);
+  --shadow-xl: 0px 16px 24px -6px rgba(0, 0, 0, 0.5), 0px 8px 16px -4px rgba(0, 0, 0, 0.3);
+  --shadow-2xl: 0px 24px 48px -12px rgba(0, 0, 0, 0.6);
 
+  /* Trading specific colors */
+  --gain: 142 70% 50%;
+  --gain-foreground: 142 70% 65%;
+  --loss: 0 72% 55%;
+  --loss-foreground: 0 72% 65%;
 }
 
 @layer base {
@@ -325,5 +301,22 @@
   .border.active-elevate-2:not(.no-active-interaction-elevate)::after,
   .border.hover-elevate:not(.no-hover-interaction-elevate)::after {
     inset: -1px;
+  }
+
+  /* Trading specific utility classes */
+  .text-gain {
+    color: hsl(var(--gain));
+  }
+
+  .text-loss {
+    color: hsl(var(--loss));
+  }
+
+  .bg-gain {
+    background-color: hsl(var(--gain) / 0.1);
+  }
+
+  .bg-loss {
+    background-color: hsl(var(--loss) / 0.1);
   }
 }
