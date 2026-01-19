@@ -1,87 +1,128 @@
-import { randomUUID } from "crypto";
-import type {
-  Position,
-  OptionPosition,
-  Trade,
-  OptionTrade,
-  WatchlistItem,
-  Portfolio,
-  PortfolioHistoryPoint,
+import { eq, and, desc } from "drizzle-orm";
+import session from "express-session";
+import connectPg from "connect-pg-simple";
+import { db, pool } from "./db";
+import {
+  users,
+  positions,
+  trades,
+  optionPositions,
+  optionTrades,
+  watchlist,
+  portfolioHistory,
+  type User,
+  type InsertUser,
+  type Position,
+  type OptionPosition,
+  type Trade,
+  type OptionTrade,
+  type WatchlistItem,
+  type Portfolio,
+  type PortfolioHistoryPoint,
+  type UserProfile,
 } from "@shared/schema";
 
-const STARTING_CASH = 100000; // $100,000 starting balance
+const STARTING_CASH = 100000;
+const PostgresSessionStore = connectPg(session);
 
 export interface IStorage {
-  // Portfolio
-  getPortfolio(): Promise<Portfolio>;
-  getPortfolioHistory(): Promise<PortfolioHistoryPoint[]>;
+  sessionStore: session.Store;
   
-  // Positions
-  getPositions(): Promise<Position[]>;
-  getPosition(symbol: string): Promise<Position | undefined>;
-  updatePosition(symbol: string, quantity: number, avgPrice: number, currentPrice: number): Promise<Position>;
-  deletePosition(symbol: string): Promise<void>;
+  // Users
+  getUser(id: number): Promise<User | undefined>;
+  getUserByUsername(username: string): Promise<User | undefined>;
+  createUser(data: InsertUser): Promise<User>;
   
-  // Options
-  getOptionPositions(): Promise<OptionPosition[]>;
-  addOptionPosition(option: Omit<OptionPosition, "id" | "profitLoss">): Promise<OptionPosition>;
-  updateOptionPosition(id: string, currentPremium: number): Promise<OptionPosition | undefined>;
-  deleteOptionPosition(id: string): Promise<void>;
+  // Portfolio (user-specific)
+  getPortfolio(userId: number): Promise<Portfolio>;
+  getPortfolioHistory(userId: number): Promise<PortfolioHistoryPoint[]>;
   
-  // Trades
-  getTrades(): Promise<Trade[]>;
-  addTrade(trade: Omit<Trade, "id">): Promise<Trade>;
+  // Positions (user-specific)
+  getPositions(userId: number): Promise<Position[]>;
+  getPosition(userId: number, symbol: string): Promise<Position | undefined>;
+  updatePosition(userId: number, symbol: string, quantity: number, avgPrice: number, currentPrice: number): Promise<Position>;
+  deletePosition(userId: number, symbol: string): Promise<void>;
   
-  // Option Trades
-  getOptionTrades(): Promise<OptionTrade[]>;
-  addOptionTrade(trade: Omit<OptionTrade, "id">): Promise<OptionTrade>;
+  // Options (user-specific)
+  getOptionPositions(userId: number): Promise<OptionPosition[]>;
+  addOptionPosition(userId: number, option: Omit<OptionPosition, "id" | "profitLoss">): Promise<OptionPosition>;
+  updateOptionPosition(userId: number, id: string, currentPremium: number): Promise<OptionPosition | undefined>;
+  deleteOptionPosition(userId: number, id: string): Promise<void>;
   
-  // Watchlist
-  getWatchlist(): Promise<WatchlistItem[]>;
-  addToWatchlist(symbol: string, name: string): Promise<WatchlistItem>;
-  removeFromWatchlist(symbol: string): Promise<void>;
+  // Trades (user-specific)
+  getTrades(userId: number): Promise<Trade[]>;
+  addTrade(userId: number, trade: Omit<Trade, "id">): Promise<Trade>;
   
-  // Cash
-  getCash(): Promise<number>;
-  updateCash(amount: number): Promise<number>;
+  // Option Trades (user-specific)
+  getOptionTrades(userId: number): Promise<OptionTrade[]>;
+  addOptionTrade(userId: number, trade: Omit<OptionTrade, "id">): Promise<OptionTrade>;
+  
+  // Watchlist (user-specific)
+  getWatchlist(userId: number): Promise<WatchlistItem[]>;
+  addToWatchlist(userId: number, symbol: string, name: string): Promise<WatchlistItem>;
+  removeFromWatchlist(userId: number, symbol: string): Promise<void>;
+  
+  // Cash (user-specific)
+  getCash(userId: number): Promise<number>;
+  updateCash(userId: number, amount: number): Promise<number>;
   
   // History
-  recordPortfolioValue(value: number): Promise<void>;
+  recordPortfolioValue(userId: number, value: number): Promise<void>;
+  
+  // Leaderboard
+  getLeaderboard(): Promise<UserProfile[]>;
+  getAllTrades(): Promise<(Trade & { username: string })[]>;
 }
 
-export class MemStorage implements IStorage {
-  private cash: number = STARTING_CASH;
-  private positions: Map<string, Position> = new Map();
-  private optionPositions: Map<string, OptionPosition> = new Map();
-  private trades: Trade[] = [];
-  private optionTrades: OptionTrade[] = [];
-  private watchlist: Map<string, WatchlistItem> = new Map();
-  private portfolioHistory: PortfolioHistoryPoint[] = [];
-  private lastHistoryRecord: number = 0;
-
+export class DatabaseStorage implements IStorage {
+  sessionStore: session.Store;
+  
   constructor() {
-    // Record initial portfolio value
-    this.recordPortfolioValue(STARTING_CASH);
+    this.sessionStore = new PostgresSessionStore({ 
+      pool, 
+      createTableIfMissing: true 
+    });
   }
-
-  async getPortfolio(): Promise<Portfolio> {
-    const positions = Array.from(this.positions.values());
-    const options = Array.from(this.optionPositions.values());
+  
+  async getUser(id: number): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.id, id));
+    return user;
+  }
+  
+  async getUserByUsername(username: string): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.username, username));
+    return user;
+  }
+  
+  async createUser(data: InsertUser): Promise<User> {
+    const [user] = await db.insert(users).values({
+      ...data,
+      cash: STARTING_CASH,
+    }).returning();
     
-    const stocksValue = positions.reduce((sum, p) => sum + p.totalValue, 0);
-    const optionsValue = options.reduce((sum, o) => sum + o.currentPremium * o.contracts * 100, 0);
-    const totalValue = this.cash + stocksValue + optionsValue;
+    // Record initial portfolio value
+    await this.recordPortfolioValue(user.id, STARTING_CASH);
     
-    // Calculate profit/loss from starting value
+    return user;
+  }
+  
+  async getPortfolio(userId: number): Promise<Portfolio> {
+    const cash = await this.getCash(userId);
+    const positionsList = await this.getPositions(userId);
+    const optionsList = await this.getOptionPositions(userId);
+    
+    const stocksValue = positionsList.reduce((sum, p) => sum + p.totalValue, 0);
+    const optionsValue = optionsList.reduce((sum, o) => sum + o.currentPremium * o.contracts * 100, 0);
+    const totalValue = cash + stocksValue + optionsValue;
+    
     const totalProfitLoss = totalValue - STARTING_CASH;
     const totalProfitLossPercent = (totalProfitLoss / STARTING_CASH) * 100;
     
-    // Day change calculation (simplified - uses sum of position changes)
-    const dayChange = positions.reduce((sum, p) => sum + p.profitLoss, 0);
+    const dayChange = positionsList.reduce((sum, p) => sum + p.profitLoss, 0);
     const dayChangePercent = stocksValue > 0 ? (dayChange / stocksValue) * 100 : 0;
-
+    
     return {
-      cash: this.cash,
+      cash,
       totalValue,
       stocksValue,
       optionsValue,
@@ -91,32 +132,95 @@ export class MemStorage implements IStorage {
       totalProfitLossPercent,
     };
   }
-
-  async getPortfolioHistory(): Promise<PortfolioHistoryPoint[]> {
-    return [...this.portfolioHistory];
+  
+  async getPortfolioHistory(userId: number): Promise<PortfolioHistoryPoint[]> {
+    const history = await db.select()
+      .from(portfolioHistory)
+      .where(eq(portfolioHistory.userId, userId))
+      .orderBy(portfolioHistory.timestamp);
+    
+    return history.map(h => ({
+      timestamp: h.timestamp.getTime(),
+      value: h.value,
+    }));
   }
-
-  async getPositions(): Promise<Position[]> {
-    return Array.from(this.positions.values());
+  
+  async getPositions(userId: number): Promise<Position[]> {
+    const dbPositions = await db.select()
+      .from(positions)
+      .where(eq(positions.userId, userId));
+    
+    return dbPositions.map(p => {
+      const currentPrice = p.averagePrice; // Will be updated with real-time price
+      const totalValue = p.quantity * currentPrice;
+      const costBasis = p.quantity * p.averagePrice;
+      const profitLoss = totalValue - costBasis;
+      const profitLossPercent = costBasis > 0 ? (profitLoss / costBasis) * 100 : 0;
+      
+      return {
+        id: String(p.id),
+        symbol: p.symbol,
+        quantity: p.quantity,
+        averagePrice: p.averagePrice,
+        currentPrice,
+        totalValue,
+        profitLoss,
+        profitLossPercent,
+      };
+    });
   }
-
-  async getPosition(symbol: string): Promise<Position | undefined> {
-    return this.positions.get(symbol);
+  
+  async getPosition(userId: number, symbol: string): Promise<Position | undefined> {
+    const [p] = await db.select()
+      .from(positions)
+      .where(and(eq(positions.userId, userId), eq(positions.symbol, symbol)));
+    
+    if (!p) return undefined;
+    
+    const currentPrice = p.averagePrice;
+    const totalValue = p.quantity * currentPrice;
+    const costBasis = p.quantity * p.averagePrice;
+    const profitLoss = totalValue - costBasis;
+    const profitLossPercent = costBasis > 0 ? (profitLoss / costBasis) * 100 : 0;
+    
+    return {
+      id: String(p.id),
+      symbol: p.symbol,
+      quantity: p.quantity,
+      averagePrice: p.averagePrice,
+      currentPrice,
+      totalValue,
+      profitLoss,
+      profitLossPercent,
+    };
   }
-
-  async updatePosition(
-    symbol: string,
-    quantity: number,
-    avgPrice: number,
-    currentPrice: number
-  ): Promise<Position> {
+  
+  async updatePosition(userId: number, symbol: string, quantity: number, avgPrice: number, currentPrice: number): Promise<Position> {
+    const existing = await db.select()
+      .from(positions)
+      .where(and(eq(positions.userId, userId), eq(positions.symbol, symbol)));
+    
+    let id: number;
+    
+    if (existing.length > 0) {
+      await db.update(positions)
+        .set({ quantity, averagePrice: avgPrice })
+        .where(and(eq(positions.userId, userId), eq(positions.symbol, symbol)));
+      id = existing[0].id;
+    } else {
+      const [inserted] = await db.insert(positions)
+        .values({ userId, symbol, quantity, averagePrice: avgPrice })
+        .returning();
+      id = inserted.id;
+    }
+    
     const totalValue = quantity * currentPrice;
     const costBasis = quantity * avgPrice;
     const profitLoss = totalValue - costBasis;
     const profitLossPercent = costBasis > 0 ? (profitLoss / costBasis) * 100 : 0;
-
-    const position: Position = {
-      id: this.positions.get(symbol)?.id || randomUUID(),
+    
+    return {
+      id: String(id),
       symbol,
       quantity,
       averagePrice: avgPrice,
@@ -125,100 +229,296 @@ export class MemStorage implements IStorage {
       profitLoss,
       profitLossPercent,
     };
-
-    this.positions.set(symbol, position);
-    return position;
   }
-
-  async deletePosition(symbol: string): Promise<void> {
-    this.positions.delete(symbol);
+  
+  async deletePosition(userId: number, symbol: string): Promise<void> {
+    await db.delete(positions)
+      .where(and(eq(positions.userId, userId), eq(positions.symbol, symbol)));
   }
-
-  async getOptionPositions(): Promise<OptionPosition[]> {
-    return Array.from(this.optionPositions.values());
+  
+  async getOptionPositions(userId: number): Promise<OptionPosition[]> {
+    const dbOptions = await db.select()
+      .from(optionPositions)
+      .where(eq(optionPositions.userId, userId));
+    
+    return dbOptions.map(o => ({
+      id: String(o.id),
+      symbol: o.symbol,
+      optionType: o.optionType as "call" | "put",
+      strikePrice: o.strikePrice,
+      expirationDate: o.expirationDate,
+      contracts: o.contracts,
+      premium: o.premium,
+      currentPremium: o.premium, // Will be updated with real-time
+      profitLoss: 0,
+    }));
   }
-
-  async addOptionPosition(option: Omit<OptionPosition, "id" | "profitLoss">): Promise<OptionPosition> {
-    const id = randomUUID();
+  
+  async addOptionPosition(userId: number, option: Omit<OptionPosition, "id" | "profitLoss">): Promise<OptionPosition> {
+    const [inserted] = await db.insert(optionPositions)
+      .values({
+        userId,
+        symbol: option.symbol,
+        optionType: option.optionType,
+        strikePrice: option.strikePrice,
+        expirationDate: option.expirationDate,
+        contracts: option.contracts,
+        premium: option.premium,
+      })
+      .returning();
+    
     const profitLoss = (option.currentPremium - option.premium) * option.contracts * 100;
-    const fullOption: OptionPosition = { ...option, id, profitLoss };
-    this.optionPositions.set(id, fullOption);
-    return fullOption;
+    
+    return {
+      ...option,
+      id: String(inserted.id),
+      profitLoss,
+    };
   }
-
-  async updateOptionPosition(id: string, currentPremium: number): Promise<OptionPosition | undefined> {
-    const option = this.optionPositions.get(id);
+  
+  async updateOptionPosition(userId: number, id: string, currentPremium: number): Promise<OptionPosition | undefined> {
+    const [option] = await db.select()
+      .from(optionPositions)
+      .where(and(eq(optionPositions.id, parseInt(id)), eq(optionPositions.userId, userId)));
+    
     if (!option) return undefined;
     
     const profitLoss = (currentPremium - option.premium) * option.contracts * 100;
-    const updated: OptionPosition = { ...option, currentPremium, profitLoss };
-    this.optionPositions.set(id, updated);
-    return updated;
+    
+    return {
+      id,
+      symbol: option.symbol,
+      optionType: option.optionType as "call" | "put",
+      strikePrice: option.strikePrice,
+      expirationDate: option.expirationDate,
+      contracts: option.contracts,
+      premium: option.premium,
+      currentPremium,
+      profitLoss,
+    };
   }
-
-  async deleteOptionPosition(id: string): Promise<void> {
-    this.optionPositions.delete(id);
+  
+  async deleteOptionPosition(userId: number, id: string): Promise<void> {
+    await db.delete(optionPositions)
+      .where(and(eq(optionPositions.id, parseInt(id)), eq(optionPositions.userId, userId)));
   }
-
-  async getTrades(): Promise<Trade[]> {
-    return [...this.trades];
+  
+  async getTrades(userId: number): Promise<Trade[]> {
+    const dbTrades = await db.select()
+      .from(trades)
+      .where(eq(trades.userId, userId))
+      .orderBy(desc(trades.timestamp));
+    
+    return dbTrades.map(t => ({
+      id: String(t.id),
+      symbol: t.symbol,
+      type: t.type as "buy" | "sell",
+      quantity: t.quantity,
+      price: t.price,
+      total: t.total,
+      timestamp: t.timestamp.getTime(),
+    }));
   }
-
-  async addTrade(trade: Omit<Trade, "id">): Promise<Trade> {
-    const fullTrade: Trade = { ...trade, id: randomUUID() };
-    this.trades.push(fullTrade);
-    return fullTrade;
+  
+  async addTrade(userId: number, trade: Omit<Trade, "id">): Promise<Trade> {
+    const [inserted] = await db.insert(trades)
+      .values({
+        userId,
+        symbol: trade.symbol,
+        type: trade.type,
+        quantity: trade.quantity,
+        price: trade.price,
+        total: trade.total,
+      })
+      .returning();
+    
+    return {
+      id: String(inserted.id),
+      symbol: inserted.symbol,
+      type: inserted.type as "buy" | "sell",
+      quantity: inserted.quantity,
+      price: inserted.price,
+      total: inserted.total,
+      timestamp: inserted.timestamp.getTime(),
+    };
   }
-
-  async getOptionTrades(): Promise<OptionTrade[]> {
-    return [...this.optionTrades];
+  
+  async getOptionTrades(userId: number): Promise<OptionTrade[]> {
+    const dbTrades = await db.select()
+      .from(optionTrades)
+      .where(eq(optionTrades.userId, userId))
+      .orderBy(desc(optionTrades.timestamp));
+    
+    return dbTrades.map(t => ({
+      id: String(t.id),
+      symbol: t.symbol,
+      optionType: t.optionType as "call" | "put",
+      strikePrice: t.strikePrice,
+      expirationDate: t.expirationDate,
+      contracts: t.contracts,
+      premium: t.premium,
+      total: t.total,
+      action: t.action as "buy" | "sell",
+      timestamp: t.timestamp.getTime(),
+    }));
   }
-
-  async addOptionTrade(trade: Omit<OptionTrade, "id">): Promise<OptionTrade> {
-    const fullTrade: OptionTrade = { ...trade, id: randomUUID() };
-    this.optionTrades.push(fullTrade);
-    return fullTrade;
+  
+  async addOptionTrade(userId: number, trade: Omit<OptionTrade, "id">): Promise<OptionTrade> {
+    const [inserted] = await db.insert(optionTrades)
+      .values({
+        userId,
+        symbol: trade.symbol,
+        optionType: trade.optionType,
+        strikePrice: trade.strikePrice,
+        expirationDate: trade.expirationDate,
+        contracts: trade.contracts,
+        premium: trade.premium,
+        total: trade.total,
+        action: trade.action,
+      })
+      .returning();
+    
+    return {
+      id: String(inserted.id),
+      symbol: inserted.symbol,
+      optionType: inserted.optionType as "call" | "put",
+      strikePrice: inserted.strikePrice,
+      expirationDate: inserted.expirationDate,
+      contracts: inserted.contracts,
+      premium: inserted.premium,
+      total: inserted.total,
+      action: inserted.action as "buy" | "sell",
+      timestamp: inserted.timestamp.getTime(),
+    };
   }
-
-  async getWatchlist(): Promise<WatchlistItem[]> {
-    return Array.from(this.watchlist.values());
+  
+  async getWatchlist(userId: number): Promise<WatchlistItem[]> {
+    const items = await db.select()
+      .from(watchlist)
+      .where(eq(watchlist.userId, userId))
+      .orderBy(desc(watchlist.addedAt));
+    
+    return items.map(w => ({
+      symbol: w.symbol,
+      name: w.name,
+      addedAt: w.addedAt.getTime(),
+    }));
   }
-
-  async addToWatchlist(symbol: string, name: string): Promise<WatchlistItem> {
-    const item: WatchlistItem = { symbol, name, addedAt: Date.now() };
-    this.watchlist.set(symbol, item);
-    return item;
-  }
-
-  async removeFromWatchlist(symbol: string): Promise<void> {
-    this.watchlist.delete(symbol);
-  }
-
-  async getCash(): Promise<number> {
-    return this.cash;
-  }
-
-  async updateCash(amount: number): Promise<number> {
-    this.cash += amount;
-    return this.cash;
-  }
-
-  async recordPortfolioValue(value: number): Promise<void> {
-    const now = Date.now();
-    // Only record once per minute to avoid too many points
-    if (now - this.lastHistoryRecord < 60000 && this.portfolioHistory.length > 0) {
-      // Update the last point instead
-      this.portfolioHistory[this.portfolioHistory.length - 1] = { timestamp: now, value };
-    } else {
-      this.portfolioHistory.push({ timestamp: now, value });
-      this.lastHistoryRecord = now;
+  
+  async addToWatchlist(userId: number, symbol: string, name: string): Promise<WatchlistItem> {
+    const existing = await db.select()
+      .from(watchlist)
+      .where(and(eq(watchlist.userId, userId), eq(watchlist.symbol, symbol)));
+    
+    if (existing.length > 0) {
+      return {
+        symbol: existing[0].symbol,
+        name: existing[0].name,
+        addedAt: existing[0].addedAt.getTime(),
+      };
     }
     
-    // Keep only last 100 points
-    if (this.portfolioHistory.length > 100) {
-      this.portfolioHistory = this.portfolioHistory.slice(-100);
+    const [inserted] = await db.insert(watchlist)
+      .values({ userId, symbol, name })
+      .returning();
+    
+    return {
+      symbol: inserted.symbol,
+      name: inserted.name,
+      addedAt: inserted.addedAt.getTime(),
+    };
+  }
+  
+  async removeFromWatchlist(userId: number, symbol: string): Promise<void> {
+    await db.delete(watchlist)
+      .where(and(eq(watchlist.userId, userId), eq(watchlist.symbol, symbol)));
+  }
+  
+  async getCash(userId: number): Promise<number> {
+    const [user] = await db.select().from(users).where(eq(users.id, userId));
+    return user?.cash ?? STARTING_CASH;
+  }
+  
+  async updateCash(userId: number, amount: number): Promise<number> {
+    const currentCash = await this.getCash(userId);
+    const newCash = currentCash + amount;
+    
+    await db.update(users)
+      .set({ cash: newCash })
+      .where(eq(users.id, userId));
+    
+    return newCash;
+  }
+  
+  async recordPortfolioValue(userId: number, value: number): Promise<void> {
+    await db.insert(portfolioHistory)
+      .values({ userId, value });
+    
+    // Keep only last 100 points per user
+    const history = await db.select()
+      .from(portfolioHistory)
+      .where(eq(portfolioHistory.userId, userId))
+      .orderBy(desc(portfolioHistory.timestamp));
+    
+    if (history.length > 100) {
+      const idsToDelete = history.slice(100).map(h => h.id);
+      for (const id of idsToDelete) {
+        await db.delete(portfolioHistory).where(eq(portfolioHistory.id, id));
+      }
     }
+  }
+  
+  async getLeaderboard(): Promise<UserProfile[]> {
+    const allUsers = await db.select().from(users);
+    
+    const profiles: UserProfile[] = [];
+    
+    for (const user of allUsers) {
+      const portfolio = await this.getPortfolio(user.id);
+      const userTrades = await this.getTrades(user.id);
+      
+      profiles.push({
+        id: user.id,
+        username: user.username,
+        totalValue: portfolio.totalValue,
+        totalProfitLoss: portfolio.totalProfitLoss,
+        totalProfitLossPercent: portfolio.totalProfitLossPercent,
+        tradesCount: userTrades.length,
+      });
+    }
+    
+    // Sort by total value descending
+    return profiles.sort((a, b) => b.totalValue - a.totalValue);
+  }
+  
+  async getAllTrades(): Promise<(Trade & { username: string })[]> {
+    const allTrades = await db.select({
+      id: trades.id,
+      userId: trades.userId,
+      symbol: trades.symbol,
+      type: trades.type,
+      quantity: trades.quantity,
+      price: trades.price,
+      total: trades.total,
+      timestamp: trades.timestamp,
+      username: users.username,
+    })
+      .from(trades)
+      .innerJoin(users, eq(trades.userId, users.id))
+      .orderBy(desc(trades.timestamp))
+      .limit(50);
+    
+    return allTrades.map(t => ({
+      id: String(t.id),
+      symbol: t.symbol,
+      type: t.type as "buy" | "sell",
+      quantity: t.quantity,
+      price: t.price,
+      total: t.total,
+      timestamp: t.timestamp.getTime(),
+      username: t.username,
+    }));
   }
 }
 
-export const storage = new MemStorage();
+export const storage = new DatabaseStorage();
