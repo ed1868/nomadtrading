@@ -4,11 +4,11 @@ import { storage } from "./storage";
 import { setupAuth } from "./auth";
 import { getQuote, getCompanyProfile, searchSymbols } from "./finnhub";
 import { insertBuySellSchema, insertOptionTradeSchema, insertWatchlistSchema } from "@shared/schema";
-import OpenAI from "openai";
+import Anthropic from "@anthropic-ai/sdk";
 
-const openai = new OpenAI({
-  apiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY,
-  baseURL: process.env.AI_INTEGRATIONS_OPENAI_BASE_URL,
+// Claude API - uses claude-sonnet-4-20250514 model
+const anthropic = new Anthropic({
+  apiKey: process.env.ANTHROPIC_API_KEY,
 });
 
 function requireAuth(req: Request, res: Response, next: NextFunction) {
@@ -412,7 +412,7 @@ export async function registerRoutes(
     }
   });
 
-  // AI Trading Tips endpoint (authenticated)
+  // AI Trading Tips endpoint (authenticated) - Uses Claude API
   app.post("/api/ai/tips", requireAuth, async (req, res) => {
     try {
       const userId = req.user!.id;
@@ -445,17 +445,156 @@ Provide 3 actionable trading tips based on this portfolio. Be specific and educa
 
 Keep each tip concise (2-3 sentences). Format as a numbered list.`;
 
-      const response = await openai.chat.completions.create({
-        model: "gpt-5",
+      const response = await anthropic.messages.create({
+        model: "claude-sonnet-4-20250514",
+        max_tokens: 500,
         messages: [{ role: "user", content: prompt }],
-        max_completion_tokens: 500,
       });
       
-      const tips = response.choices[0]?.message?.content || "Unable to generate tips at this time.";
+      const textContent = response.content.find(c => c.type === "text");
+      const tips = textContent?.text || "Unable to generate tips at this time.";
       res.json({ tips });
     } catch (error) {
       console.error("Error generating AI tips:", error);
       res.status(500).json({ error: "Failed to generate trading tips" });
+    }
+  });
+
+  // AI Agent endpoints for the Agents tab
+  app.post("/api/agents/research", requireAuth, async (req, res) => {
+    try {
+      const { symbol, query } = req.body;
+      
+      const prompt = `You are an expert stock research analyst. Analyze ${symbol || "the market"} and provide insights on: ${query || "current market conditions, key metrics, and investment thesis"}.
+
+Be thorough but concise. Include:
+- Key financial metrics and valuation
+- Recent news or developments
+- Bull and bear cases
+- Risk factors
+
+Format your response with clear sections.`;
+
+      const response = await anthropic.messages.create({
+        model: "claude-sonnet-4-20250514",
+        max_tokens: 1000,
+        messages: [{ role: "user", content: prompt }],
+      });
+      
+      const textContent = response.content.find(c => c.type === "text");
+      res.json({ analysis: textContent?.text || "Unable to generate analysis." });
+    } catch (error) {
+      console.error("Error in research agent:", error);
+      res.status(500).json({ error: "Research agent failed" });
+    }
+  });
+
+  app.post("/api/agents/sentiment", requireAuth, async (req, res) => {
+    try {
+      const { symbol } = req.body;
+      
+      const prompt = `You are a social media sentiment analyst specializing in stock market analysis. Analyze the general market sentiment for ${symbol || "the overall market"}.
+
+Consider:
+- Typical retail investor sentiment patterns
+- Common bullish and bearish narratives
+- Social media trends and discussions
+- News sentiment impact
+
+Provide a sentiment score (1-10, where 10 is extremely bullish) and explain your reasoning. Format as JSON with keys: score, sentiment (bullish/bearish/neutral), summary, key_narratives (array).`;
+
+      const response = await anthropic.messages.create({
+        model: "claude-sonnet-4-20250514",
+        max_tokens: 800,
+        messages: [{ role: "user", content: prompt }],
+      });
+      
+      const textContent = response.content.find(c => c.type === "text");
+      try {
+        const parsed = JSON.parse(textContent?.text || "{}");
+        res.json(parsed);
+      } catch {
+        res.json({ analysis: textContent?.text || "Unable to analyze sentiment." });
+      }
+    } catch (error) {
+      console.error("Error in sentiment agent:", error);
+      res.status(500).json({ error: "Sentiment agent failed" });
+    }
+  });
+
+  app.post("/api/agents/game-theory", requireAuth, async (req, res) => {
+    try {
+      const { scenario, options } = req.body;
+      const userId = req.user!.id;
+      const portfolio = await storage.getPortfolio(userId);
+      
+      const prompt = `You are a game theory strategist specializing in market dynamics and trading decisions.
+
+Current portfolio: $${portfolio.totalValue.toFixed(2)} (Cash: $${portfolio.cash.toFixed(2)})
+
+Scenario: ${scenario || "Standard market conditions - help optimize trading strategy"}
+Options being considered: ${options || "Buy, hold, or sell positions"}
+
+Apply game theory principles to analyze:
+1. Nash equilibrium considerations
+2. Risk/reward asymmetries
+3. Market participant behavior patterns
+4. Optimal strategy given current conditions
+
+Provide actionable recommendations with probability-weighted outcomes.`;
+
+      const response = await anthropic.messages.create({
+        model: "claude-sonnet-4-20250514",
+        max_tokens: 1000,
+        messages: [{ role: "user", content: prompt }],
+      });
+      
+      const textContent = response.content.find(c => c.type === "text");
+      res.json({ strategy: textContent?.text || "Unable to generate strategy." });
+    } catch (error) {
+      console.error("Error in game theory agent:", error);
+      res.status(500).json({ error: "Game theory agent failed" });
+    }
+  });
+
+  app.post("/api/agents/risk", requireAuth, async (req, res) => {
+    try {
+      const userId = req.user!.id;
+      const portfolio = await storage.getPortfolio(userId);
+      const positions = await storage.getPositions(userId);
+      
+      const positionSummary = positions.map(p => 
+        `${p.symbol}: ${p.quantity} shares @ $${p.averagePrice.toFixed(2)} (${((p.quantity * p.currentPrice / portfolio.totalValue) * 100).toFixed(1)}% of portfolio)`
+      ).join("\n");
+      
+      const prompt = `You are a risk management expert. Analyze this portfolio for potential risks:
+
+Portfolio Value: $${portfolio.totalValue.toFixed(2)}
+Cash: $${portfolio.cash.toFixed(2)} (${((portfolio.cash / portfolio.totalValue) * 100).toFixed(1)}%)
+
+Positions:
+${positionSummary || "No positions"}
+
+Analyze:
+1. Concentration risk
+2. Sector exposure
+3. Volatility considerations
+4. Downside scenarios
+5. Hedging recommendations
+
+Provide a risk score (1-10) and specific recommendations.`;
+
+      const response = await anthropic.messages.create({
+        model: "claude-sonnet-4-20250514",
+        max_tokens: 800,
+        messages: [{ role: "user", content: prompt }],
+      });
+      
+      const textContent = response.content.find(c => c.type === "text");
+      res.json({ riskAnalysis: textContent?.text || "Unable to analyze risk." });
+    } catch (error) {
+      console.error("Error in risk agent:", error);
+      res.status(500).json({ error: "Risk agent failed" });
     }
   });
 
