@@ -169,7 +169,7 @@ export default function AuthPage() {
             Master Trading with AI-Powered Insights
           </h1>
           <p className="text-lg text-muted-foreground mb-8">
-            Practice trading with $100,000 in virtual money. Get AI tips, compete with friends, and learn the markets risk-free.
+            Get AI tips, compete with friends, and learn the markets risk-free.
           </p>
           
           <div className="space-y-6">
