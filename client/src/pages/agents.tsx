@@ -218,17 +218,17 @@ function RiskAgent() {
 
 export default function Agents() {
   return (
-    <div className="container mx-auto px-4 py-6 max-w-6xl">
+    <div className="container mx-auto px-4 py-6 max-w-6xl pb-20 md:pb-6">
       <div className="mb-6">
         <div className="flex flex-wrap items-center gap-3 mb-2">
           <Bot className="h-8 w-8 text-primary" />
-          <h1 className="text-2xl sm:text-3xl font-bold">AI Agents</h1>
-          <Badge variant="outline" className="bg-yellow-500/10 text-yellow-600 border-yellow-500/30">
+          <h1 className="text-2xl sm:text-3xl font-bold" data-testid="text-agents-title">AI Agents</h1>
+          <Badge variant="outline" className="bg-yellow-500/10 text-yellow-600 border-yellow-500/30" data-testid="badge-beta">
             <AlertTriangle className="h-3 w-3 mr-1" />
             Beta
           </Badge>
         </div>
-        <p className="text-muted-foreground">
+        <p className="text-muted-foreground" data-testid="text-agents-description">
           AI-powered agents to help with investment research, market analysis, and trading strategies.
         </p>
       </div>

@@ -8,11 +8,12 @@ import { ThemeToggle } from "@/components/theme-toggle";
 import { AuthProvider, useAuth } from "@/hooks/use-auth";
 import { ProtectedRoute } from "@/lib/protected-route";
 import { Button } from "@/components/ui/button";
-import { TrendingUp, LayoutDashboard, BookOpen, Trophy, LogOut, Users } from "lucide-react";
+import { TrendingUp, LayoutDashboard, BookOpen, Trophy, LogOut, Users, Bot } from "lucide-react";
 import NotFound from "@/pages/not-found";
 import Dashboard from "@/pages/dashboard";
 import AuthPage from "@/pages/auth-page";
 import Discovery from "@/pages/discovery";
+import Agents from "@/pages/agents";
 
 function Header() {
   const { user, logoutMutation } = useAuth();
@@ -64,6 +65,16 @@ function Header() {
                   Social
                 </Button>
               </Link>
+              <Link href="/agents">
+                <Button 
+                  variant={location === "/agents" ? "secondary" : "ghost"} 
+                  size="sm"
+                  data-testid="nav-agents"
+                >
+                  <Bot className="h-4 w-4 mr-1" />
+                  Agents
+                </Button>
+              </Link>
             </nav>
           )}
         </div>
@@ -105,7 +116,7 @@ function MobileNav() {
           <Button 
             variant={location === "/" ? "secondary" : "ghost"} 
             size="sm"
-            className="flex-col h-auto py-2 px-4"
+            className="flex-col h-auto py-2 px-3"
           >
             <LayoutDashboard className="h-5 w-5" />
             <span className="text-xs mt-1">Trade</span>
@@ -115,7 +126,7 @@ function MobileNav() {
           <Button 
             variant={location === "/discover" ? "secondary" : "ghost"} 
             size="sm"
-            className="flex-col h-auto py-2 px-4"
+            className="flex-col h-auto py-2 px-3"
           >
             <BookOpen className="h-5 w-5" />
             <span className="text-xs mt-1">Learn</span>
@@ -125,10 +136,20 @@ function MobileNav() {
           <Button 
             variant={location === "/social" ? "secondary" : "ghost"} 
             size="sm"
-            className="flex-col h-auto py-2 px-4"
+            className="flex-col h-auto py-2 px-3"
           >
             <Users className="h-5 w-5" />
             <span className="text-xs mt-1">Social</span>
+          </Button>
+        </Link>
+        <Link href="/agents">
+          <Button 
+            variant={location === "/agents" ? "secondary" : "ghost"} 
+            size="sm"
+            className="flex-col h-auto py-2 px-3"
+          >
+            <Bot className="h-5 w-5" />
+            <span className="text-xs mt-1">Agents</span>
           </Button>
         </Link>
       </div>
@@ -142,6 +163,7 @@ function Router() {
       <ProtectedRoute path="/" component={Dashboard} />
       <ProtectedRoute path="/discover" component={Discovery} />
       <ProtectedRoute path="/social" component={SocialPage} />
+      <ProtectedRoute path="/agents" component={Agents} />
       <Route path="/auth" component={AuthPage} />
       <Route component={NotFound} />
     </Switch>
