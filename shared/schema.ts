@@ -53,7 +53,7 @@ export type User = typeof users.$inferSelect;
 export const positions = pgTable("positions", {
   id: serial("id").primaryKey(),
   userId: integer("user_id").references(() => users.id).notNull(),
-  symbol: varchar("symbol", { length: 10 }).notNull(),
+  symbol: varchar("symbol", { length: 20 }).notNull(),
   quantity: integer("quantity").notNull(),
   averagePrice: real("average_price").notNull(),
 });
@@ -64,7 +64,7 @@ export type DbPosition = typeof positions.$inferSelect;
 export const trades = pgTable("trades", {
   id: serial("id").primaryKey(),
   userId: integer("user_id").references(() => users.id).notNull(),
-  symbol: varchar("symbol", { length: 10 }).notNull(),
+  symbol: varchar("symbol", { length: 20 }).notNull(),
   type: varchar("type", { length: 10 }).notNull(), // buy or sell
   quantity: integer("quantity").notNull(),
   price: real("price").notNull(),
@@ -78,7 +78,7 @@ export type DbTrade = typeof trades.$inferSelect;
 export const optionPositions = pgTable("option_positions", {
   id: serial("id").primaryKey(),
   userId: integer("user_id").references(() => users.id).notNull(),
-  symbol: varchar("symbol", { length: 10 }).notNull(),
+  symbol: varchar("symbol", { length: 20 }).notNull(),
   optionType: varchar("option_type", { length: 10 }).notNull(), // call or put
   strikePrice: real("strike_price").notNull(),
   expirationDate: varchar("expiration_date", { length: 20 }).notNull(),
@@ -92,7 +92,7 @@ export type DbOptionPosition = typeof optionPositions.$inferSelect;
 export const optionTrades = pgTable("option_trades", {
   id: serial("id").primaryKey(),
   userId: integer("user_id").references(() => users.id).notNull(),
-  symbol: varchar("symbol", { length: 10 }).notNull(),
+  symbol: varchar("symbol", { length: 20 }).notNull(),
   optionType: varchar("option_type", { length: 10 }).notNull(),
   strikePrice: real("strike_price").notNull(),
   expirationDate: varchar("expiration_date", { length: 20 }).notNull(),
@@ -109,7 +109,7 @@ export type DbOptionTrade = typeof optionTrades.$inferSelect;
 export const watchlist = pgTable("watchlist", {
   id: serial("id").primaryKey(),
   userId: integer("user_id").references(() => users.id).notNull(),
-  symbol: varchar("symbol", { length: 10 }).notNull(),
+  symbol: varchar("symbol", { length: 20 }).notNull(),
   name: text("name").notNull(),
   addedAt: timestamp("added_at").defaultNow().notNull(),
 });
@@ -216,20 +216,20 @@ export interface UserProfile {
 // ============ API Validation Schemas ============
 
 export const insertTradeSchema = z.object({
-  symbol: z.string().min(1).max(10),
+  symbol: z.string().min(1).max(20),
   type: z.enum(["buy", "sell"]),
   quantity: z.number().positive().int(),
   price: z.number().positive(),
 });
 
 export const insertBuySellSchema = z.object({
-  symbol: z.string().min(1).max(10),
+  symbol: z.string().min(1).max(20),
   quantity: z.number().positive().int(),
   price: z.number().positive(),
 });
 
 export const insertOptionTradeSchema = z.object({
-  symbol: z.string().min(1).max(10),
+  symbol: z.string().min(1).max(20),
   optionType: z.enum(["call", "put"]),
   strikePrice: z.number().positive(),
   expirationDate: z.string(),
@@ -239,7 +239,7 @@ export const insertOptionTradeSchema = z.object({
 });
 
 export const insertWatchlistSchema = z.object({
-  symbol: z.string().min(1).max(10),
+  symbol: z.string().min(1).max(20),
 });
 
 export type InsertTrade = z.infer<typeof insertTradeSchema>;
