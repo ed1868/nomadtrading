@@ -1,11 +1,9 @@
 import { useState } from "react";
-import { useMutation } from "@tanstack/react-query";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
-import { Skeleton } from "@/components/ui/skeleton";
 import { 
   Bot, 
   Search, 
@@ -13,12 +11,11 @@ import {
   Brain, 
   Shield, 
   Sparkles,
-  ChevronRight,
   AlertTriangle,
   MessageSquare,
-  Loader2
+  Rocket
 } from "lucide-react";
-import { apiRequest } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
 
 interface AgentCardProps {
   icon: any;
@@ -50,17 +47,16 @@ function AgentCard({ icon: Icon, title, description, badge, badgeVariant = "seco
 }
 
 function ResearchAgent() {
+  const { toast } = useToast();
   const [symbol, setSymbol] = useState("");
   const [query, setQuery] = useState("");
-  const [result, setResult] = useState<string | null>(null);
 
-  const mutation = useMutation({
-    mutationFn: async () => {
-      const res = await apiRequest("POST", "/api/agents/research", { symbol, query });
-      return res.json();
-    },
-    onSuccess: (data) => setResult(data.analysis),
-  });
+  const handleClick = () => {
+    toast({
+      title: "Coming Soon!",
+      description: "This feature is coming in v3 of Nomad Tradings.",
+    });
+  };
 
   return (
     <div className="flex flex-col gap-3 flex-1">
@@ -78,34 +74,27 @@ function ResearchAgent() {
         data-testid="input-research-query"
       />
       <Button 
-        onClick={() => mutation.mutate()} 
-        disabled={mutation.isPending}
+        onClick={handleClick}
         className="w-full"
         data-testid="button-research"
       >
-        {mutation.isPending ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Search className="h-4 w-4 mr-2" />}
+        <Rocket className="h-4 w-4 mr-2" />
         Research
       </Button>
-      {result && (
-        <div className="mt-3 p-3 bg-muted/50 rounded-lg max-h-64 overflow-y-auto">
-          <p className="text-sm whitespace-pre-wrap" data-testid="text-research-result">{result}</p>
-        </div>
-      )}
     </div>
   );
 }
 
 function SentimentAgent() {
+  const { toast } = useToast();
   const [symbol, setSymbol] = useState("");
-  const [result, setResult] = useState<any>(null);
 
-  const mutation = useMutation({
-    mutationFn: async () => {
-      const res = await apiRequest("POST", "/api/agents/sentiment", { symbol });
-      return res.json();
-    },
-    onSuccess: (data) => setResult(data),
-  });
+  const handleClick = () => {
+    toast({
+      title: "Coming Soon!",
+      description: "This feature is coming in v3 of Nomad Tradings.",
+    });
+  };
 
   return (
     <div className="flex flex-col gap-3 flex-1">
@@ -116,44 +105,27 @@ function SentimentAgent() {
         data-testid="input-sentiment-symbol"
       />
       <Button 
-        onClick={() => mutation.mutate()} 
-        disabled={mutation.isPending}
+        onClick={handleClick}
         className="w-full"
         data-testid="button-sentiment"
       >
-        {mutation.isPending ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <MessageSquare className="h-4 w-4 mr-2" />}
+        <Rocket className="h-4 w-4 mr-2" />
         Analyze Sentiment
       </Button>
-      {result && (
-        <div className="mt-3 p-3 bg-muted/50 rounded-lg">
-          {result.score && (
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-sm font-medium">Sentiment Score</span>
-              <Badge variant={result.score >= 6 ? "default" : result.score <= 4 ? "destructive" : "secondary"}>
-                {result.score}/10 - {result.sentiment || "Neutral"}
-              </Badge>
-            </div>
-          )}
-          <p className="text-sm whitespace-pre-wrap" data-testid="text-sentiment-result">
-            {result.summary || result.analysis || JSON.stringify(result, null, 2)}
-          </p>
-        </div>
-      )}
     </div>
   );
 }
 
 function GameTheoryAgent() {
+  const { toast } = useToast();
   const [scenario, setScenario] = useState("");
-  const [result, setResult] = useState<string | null>(null);
 
-  const mutation = useMutation({
-    mutationFn: async () => {
-      const res = await apiRequest("POST", "/api/agents/game-theory", { scenario });
-      return res.json();
-    },
-    onSuccess: (data) => setResult(data.strategy),
-  });
+  const handleClick = () => {
+    toast({
+      title: "Coming Soon!",
+      description: "This feature is coming in v3 of Nomad Tradings.",
+    });
+  };
 
   return (
     <div className="flex flex-col gap-3 flex-1">
@@ -165,33 +137,26 @@ function GameTheoryAgent() {
         data-testid="input-game-scenario"
       />
       <Button 
-        onClick={() => mutation.mutate()} 
-        disabled={mutation.isPending}
+        onClick={handleClick}
         className="w-full"
         data-testid="button-game-theory"
       >
-        {mutation.isPending ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Brain className="h-4 w-4 mr-2" />}
+        <Rocket className="h-4 w-4 mr-2" />
         Analyze Strategy
       </Button>
-      {result && (
-        <div className="mt-3 p-3 bg-muted/50 rounded-lg max-h-64 overflow-y-auto">
-          <p className="text-sm whitespace-pre-wrap" data-testid="text-game-result">{result}</p>
-        </div>
-      )}
     </div>
   );
 }
 
 function RiskAgent() {
-  const [result, setResult] = useState<string | null>(null);
+  const { toast } = useToast();
 
-  const mutation = useMutation({
-    mutationFn: async () => {
-      const res = await apiRequest("POST", "/api/agents/risk", {});
-      return res.json();
-    },
-    onSuccess: (data) => setResult(data.riskAnalysis),
-  });
+  const handleClick = () => {
+    toast({
+      title: "Coming Soon!",
+      description: "This feature is coming in v3 of Nomad Tradings.",
+    });
+  };
 
   return (
     <div className="flex flex-col gap-3 flex-1">
@@ -199,19 +164,13 @@ function RiskAgent() {
         Analyzes your current portfolio for concentration risk, volatility exposure, and provides hedging recommendations.
       </p>
       <Button 
-        onClick={() => mutation.mutate()} 
-        disabled={mutation.isPending}
+        onClick={handleClick}
         className="w-full"
         data-testid="button-risk"
       >
-        {mutation.isPending ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Shield className="h-4 w-4 mr-2" />}
+        <Rocket className="h-4 w-4 mr-2" />
         Analyze Portfolio Risk
       </Button>
-      {result && (
-        <div className="mt-3 p-3 bg-muted/50 rounded-lg max-h-64 overflow-y-auto">
-          <p className="text-sm whitespace-pre-wrap" data-testid="text-risk-result">{result}</p>
-        </div>
-      )}
     </div>
   );
 }
