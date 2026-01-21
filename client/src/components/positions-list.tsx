@@ -124,7 +124,7 @@ export function PositionsList({ onSelectStock }: PositionsListProps) {
                         <TrendingDown className="h-3 w-3" />
                       )}
                       <span className="font-mono">
-                        {formatPercent(position.profitLossPercent)}
+                        {isPositive ? "+" : ""}{formatCurrency(position.profitLoss)} ({formatPercent(position.profitLossPercent)})
                       </span>
                     </div>
                   </div>
