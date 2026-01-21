@@ -356,6 +356,38 @@ export async function registerRoutes(
     }
   });
 
+  // Get ticker data - top 5 watchlist items or popular stocks as fallback
+  app.get("/api/ticker", requireAuth, async (req, res) => {
+    try {
+      const userId = req.user!.id;
+      const watchlist = await storage.getWatchlist(userId);
+      
+      // Default popular symbols if watchlist is empty
+      const defaultSymbols = ["AAPL", "MSFT", "GOOGL", "AMZN", "NVDA"];
+      
+      let symbols: string[];
+      if (watchlist.length > 0) {
+        // Use top 5 from user's watchlist
+        symbols = watchlist.slice(0, 5).map(item => item.symbol);
+      } else {
+        // Use default popular stocks
+        symbols = defaultSymbols;
+      }
+      
+      const tickerData = await Promise.all(
+        symbols.map(async (symbol) => {
+          const quote = await getQuote(symbol);
+          return { symbol, quote };
+        })
+      );
+      
+      res.json(tickerData.filter(item => item.quote !== null));
+    } catch (error) {
+      console.error("Error fetching ticker data:", error);
+      res.status(500).json({ error: "Failed to fetch ticker data" });
+    }
+  });
+
   // Add to watchlist (authenticated)
   app.post("/api/watchlist", requireAuth, async (req, res) => {
     try {

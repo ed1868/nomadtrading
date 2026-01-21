@@ -2,25 +2,24 @@ import { useQuery } from "@tanstack/react-query";
 import { TrendingUp, TrendingDown } from "lucide-react";
 import type { StockQuote } from "@shared/schema";
 
-interface WatchlistItem {
-  id: number;
+interface TickerItem {
   symbol: string;
   quote: StockQuote | null;
 }
 
 export function StockTicker() {
-  const { data: watchlist } = useQuery<WatchlistItem[]>({
-    queryKey: ["/api/watchlist"],
+  const { data: tickerData } = useQuery<TickerItem[]>({
+    queryKey: ["/api/ticker"],
     refetchInterval: 15000,
   });
 
-  const tickerData = watchlist?.filter(item => item.quote !== null) || [];
+  const validData = tickerData?.filter(item => item.quote !== null) || [];
 
-  if (tickerData.length === 0) {
+  if (validData.length === 0) {
     return null;
   }
 
-  const tickerContent = tickerData.map((item, index) => (
+  const tickerContent = validData.map((item, index) => (
     <div
       key={`${item.symbol}-${index}`}
       className="inline-flex items-center gap-2 px-4 py-2"
