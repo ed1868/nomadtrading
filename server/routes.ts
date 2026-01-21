@@ -444,6 +444,79 @@ export async function registerRoutes(
     }
   });
 
+  // Social Posts endpoints
+  app.get("/api/posts", async (req, res) => {
+    try {
+      const userId = req.user?.id;
+      const postsList = await storage.getPosts(userId);
+      res.json(postsList);
+    } catch (error) {
+      console.error("Error fetching posts:", error);
+      res.status(500).json({ error: "Failed to fetch posts" });
+    }
+  });
+
+  app.post("/api/posts", requireAuth, async (req, res) => {
+    try {
+      const userId = req.user!.id;
+      const { content, symbol, sentiment } = req.body;
+      
+      if (!content || content.trim().length === 0) {
+        return res.status(400).json({ error: "Content is required" });
+      }
+      
+      if (content.length > 500) {
+        return res.status(400).json({ error: "Content too long (max 500 characters)" });
+      }
+      
+      const post = await storage.createPost(userId, { 
+        content: content.trim(), 
+        symbol: symbol || null, 
+        sentiment: sentiment || null 
+      });
+      res.json(post);
+    } catch (error) {
+      console.error("Error creating post:", error);
+      res.status(500).json({ error: "Failed to create post" });
+    }
+  });
+
+  app.post("/api/posts/:id/like", requireAuth, async (req, res) => {
+    try {
+      const userId = req.user!.id;
+      const postId = parseInt(String(req.params.id));
+      await storage.likePost(userId, postId);
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error liking post:", error);
+      res.status(500).json({ error: "Failed to like post" });
+    }
+  });
+
+  app.delete("/api/posts/:id/like", requireAuth, async (req, res) => {
+    try {
+      const userId = req.user!.id;
+      const postId = parseInt(String(req.params.id));
+      await storage.unlikePost(userId, postId);
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error unliking post:", error);
+      res.status(500).json({ error: "Failed to unlike post" });
+    }
+  });
+
+  app.delete("/api/posts/:id", requireAuth, async (req, res) => {
+    try {
+      const userId = req.user!.id;
+      const postId = parseInt(String(req.params.id));
+      await storage.deletePost(userId, postId);
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error deleting post:", error);
+      res.status(500).json({ error: "Failed to delete post" });
+    }
+  });
+
   // AI Trading Tips endpoint (authenticated) - Uses Claude API
   app.post("/api/ai/tips", requireAuth, async (req, res) => {
     try {

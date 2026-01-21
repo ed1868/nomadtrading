@@ -126,6 +126,34 @@ export const portfolioHistory = pgTable("portfolio_history", {
 
 export type DbPortfolioHistory = typeof portfolioHistory.$inferSelect;
 
+// Social posts table
+export const posts = pgTable("posts", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").references(() => users.id).notNull(),
+  content: text("content").notNull(),
+  symbol: varchar("symbol", { length: 20 }),
+  sentiment: varchar("sentiment", { length: 10 }),
+  likes: integer("likes").notNull().default(0),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const insertPostSchema = createInsertSchema(posts).pick({
+  content: true,
+  symbol: true,
+  sentiment: true,
+});
+
+export type InsertPost = z.infer<typeof insertPostSchema>;
+export type DbPost = typeof posts.$inferSelect;
+
+// Post likes table
+export const postLikes = pgTable("post_likes", {
+  id: serial("id").primaryKey(),
+  postId: integer("post_id").references(() => posts.id).notNull(),
+  userId: integer("user_id").references(() => users.id).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
 // ============ Frontend Interfaces ============
 
 // Position in portfolio (with computed fields for display)
@@ -211,6 +239,19 @@ export interface UserProfile {
   totalProfitLoss: number;
   totalProfitLossPercent: number;
   tradesCount: number;
+}
+
+// Social post for display
+export interface Post {
+  id: number;
+  userId: number;
+  username: string;
+  content: string;
+  symbol?: string | null;
+  sentiment?: "bullish" | "bearish" | "neutral" | null;
+  likes: number;
+  likedByUser: boolean;
+  createdAt: number;
 }
 
 // ============ API Validation Schemas ============

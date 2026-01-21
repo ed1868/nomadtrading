@@ -14,6 +14,7 @@ import Dashboard from "@/pages/dashboard";
 import AuthPage from "@/pages/auth-page";
 import Discovery from "@/pages/discovery";
 import Agents from "@/pages/agents";
+import Social from "@/pages/social";
 
 function Header() {
   const { user, logoutMutation } = useAuth();
@@ -162,41 +163,13 @@ function Router() {
     <Switch>
       <ProtectedRoute path="/" component={Dashboard} />
       <ProtectedRoute path="/discover" component={Discovery} />
-      <ProtectedRoute path="/social" component={SocialPage} />
+      <ProtectedRoute path="/social" component={Social} />
       <ProtectedRoute path="/agents" component={Agents} />
       <Route path="/auth" component={AuthPage} />
       <Route component={NotFound} />
     </Switch>
   );
 }
-
-function SocialPage() {
-  return (
-    <div className="container mx-auto px-4 py-6 max-w-6xl">
-      <div className="mb-6">
-        <h1 className="text-3xl font-bold flex items-center gap-3">
-          <Users className="h-8 w-8 text-primary" />
-          Social Trading
-        </h1>
-        <p className="text-muted-foreground mt-1">
-          See how other traders are doing and compete on the leaderboard.
-        </p>
-      </div>
-      
-      <div className="grid gap-6 lg:grid-cols-2">
-        <div>
-          <Leaderboard />
-        </div>
-        <div>
-          <SocialFeed />
-        </div>
-      </div>
-    </div>
-  );
-}
-
-import { Leaderboard } from "@/components/leaderboard";
-import { SocialFeed } from "@/components/social-feed";
 
 function App() {
   return (

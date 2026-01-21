@@ -10,6 +10,8 @@ import {
   optionTrades,
   watchlist,
   portfolioHistory,
+  posts,
+  postLikes,
   type User,
   type InsertUser,
   type Position,
@@ -20,6 +22,8 @@ import {
   type Portfolio,
   type PortfolioHistoryPoint,
   type UserProfile,
+  type Post,
+  type InsertPost,
 } from "@shared/schema";
 
 const STARTING_CASH = 100000;
@@ -72,6 +76,13 @@ export interface IStorage {
   // Leaderboard
   getLeaderboard(): Promise<UserProfile[]>;
   getAllTrades(): Promise<(Trade & { username: string })[]>;
+  
+  // Social Posts
+  getPosts(userId?: number): Promise<Post[]>;
+  createPost(userId: number, data: InsertPost): Promise<Post>;
+  likePost(userId: number, postId: number): Promise<void>;
+  unlikePost(userId: number, postId: number): Promise<void>;
+  deletePost(userId: number, postId: number): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -518,6 +529,117 @@ export class DatabaseStorage implements IStorage {
       timestamp: t.timestamp.getTime(),
       username: t.username,
     }));
+  }
+  
+  async getPosts(currentUserId?: number): Promise<Post[]> {
+    const allPosts = await db.select({
+      id: posts.id,
+      userId: posts.userId,
+      content: posts.content,
+      symbol: posts.symbol,
+      sentiment: posts.sentiment,
+      likes: posts.likes,
+      createdAt: posts.createdAt,
+      username: users.username,
+    })
+      .from(posts)
+      .innerJoin(users, eq(posts.userId, users.id))
+      .orderBy(desc(posts.createdAt))
+      .limit(100);
+    
+    const result: Post[] = [];
+    
+    for (const p of allPosts) {
+      let likedByUser = false;
+      
+      if (currentUserId) {
+        const [like] = await db.select()
+          .from(postLikes)
+          .where(and(eq(postLikes.postId, p.id), eq(postLikes.userId, currentUserId)));
+        likedByUser = !!like;
+      }
+      
+      result.push({
+        id: p.id,
+        userId: p.userId,
+        username: p.username,
+        content: p.content,
+        symbol: p.symbol,
+        sentiment: p.sentiment as "bullish" | "bearish" | "neutral" | null,
+        likes: p.likes,
+        likedByUser,
+        createdAt: p.createdAt.getTime(),
+      });
+    }
+    
+    return result;
+  }
+  
+  async createPost(userId: number, data: InsertPost): Promise<Post> {
+    const [user] = await db.select().from(users).where(eq(users.id, userId));
+    
+    const [inserted] = await db.insert(posts)
+      .values({
+        userId,
+        content: data.content,
+        symbol: data.symbol || null,
+        sentiment: data.sentiment || null,
+      })
+      .returning();
+    
+    return {
+      id: inserted.id,
+      userId: inserted.userId,
+      username: user?.username || "Unknown",
+      content: inserted.content,
+      symbol: inserted.symbol,
+      sentiment: inserted.sentiment as "bullish" | "bearish" | "neutral" | null,
+      likes: inserted.likes,
+      likedByUser: false,
+      createdAt: inserted.createdAt.getTime(),
+    };
+  }
+  
+  async likePost(userId: number, postId: number): Promise<void> {
+    const [existing] = await db.select()
+      .from(postLikes)
+      .where(and(eq(postLikes.postId, postId), eq(postLikes.userId, userId)));
+    
+    if (!existing) {
+      await db.insert(postLikes).values({ postId, userId });
+      await db.update(posts)
+        .set({ likes: posts.likes })
+        .where(eq(posts.id, postId));
+      
+      // Increment likes count
+      const [post] = await db.select().from(posts).where(eq(posts.id, postId));
+      if (post) {
+        await db.update(posts)
+          .set({ likes: post.likes + 1 })
+          .where(eq(posts.id, postId));
+      }
+    }
+  }
+  
+  async unlikePost(userId: number, postId: number): Promise<void> {
+    await db.delete(postLikes)
+      .where(and(eq(postLikes.postId, postId), eq(postLikes.userId, userId)));
+    
+    // Decrement likes count
+    const [post] = await db.select().from(posts).where(eq(posts.id, postId));
+    if (post && post.likes > 0) {
+      await db.update(posts)
+        .set({ likes: post.likes - 1 })
+        .where(eq(posts.id, postId));
+    }
+  }
+  
+  async deletePost(userId: number, postId: number): Promise<void> {
+    // First delete all likes for this post
+    await db.delete(postLikes).where(eq(postLikes.postId, postId));
+    // Then delete the post (only if user owns it)
+    await db.delete(posts)
+      .where(and(eq(posts.id, postId), eq(posts.userId, userId)));
   }
 }
 
