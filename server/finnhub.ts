@@ -147,6 +147,58 @@ const CRYPTO_SYMBOLS = [
   { symbol: "BINANCE:LTCUSDT", description: "Litecoin / US Dollar", keywords: ["litecoin", "ltc", "crypto"] },
 ];
 
+const POPULAR_STOCKS = [
+  { symbol: "AAPL", description: "Apple Inc", keywords: ["apple", "iphone", "mac", "tech"] },
+  { symbol: "MSFT", description: "Microsoft Corporation", keywords: ["microsoft", "windows", "azure", "tech"] },
+  { symbol: "GOOGL", description: "Alphabet Inc", keywords: ["google", "alphabet", "youtube", "tech"] },
+  { symbol: "AMZN", description: "Amazon.com Inc", keywords: ["amazon", "aws", "ecommerce", "tech"] },
+  { symbol: "NVDA", description: "NVIDIA Corporation", keywords: ["nvidia", "gpu", "ai", "tech", "graphics"] },
+  { symbol: "META", description: "Meta Platforms Inc", keywords: ["meta", "facebook", "instagram", "whatsapp", "tech"] },
+  { symbol: "TSLA", description: "Tesla Inc", keywords: ["tesla", "electric", "ev", "car", "musk"] },
+  { symbol: "JPM", description: "JPMorgan Chase & Co", keywords: ["jpmorgan", "chase", "bank", "finance"] },
+  { symbol: "V", description: "Visa Inc", keywords: ["visa", "payment", "credit", "finance"] },
+  { symbol: "MA", description: "Mastercard Inc", keywords: ["mastercard", "payment", "credit", "finance"] },
+  { symbol: "WMT", description: "Walmart Inc", keywords: ["walmart", "retail", "store"] },
+  { symbol: "JNJ", description: "Johnson & Johnson", keywords: ["johnson", "pharma", "healthcare"] },
+  { symbol: "PG", description: "Procter & Gamble Co", keywords: ["procter", "gamble", "consumer"] },
+  { symbol: "UNH", description: "UnitedHealth Group Inc", keywords: ["unitedhealth", "health", "insurance"] },
+  { symbol: "HD", description: "Home Depot Inc", keywords: ["home", "depot", "retail", "hardware"] },
+  { symbol: "BAC", description: "Bank of America Corp", keywords: ["bank", "america", "finance"] },
+  { symbol: "KO", description: "Coca-Cola Co", keywords: ["coca", "cola", "coke", "beverage"] },
+  { symbol: "PEP", description: "PepsiCo Inc", keywords: ["pepsi", "pepsico", "beverage"] },
+  { symbol: "DIS", description: "Walt Disney Co", keywords: ["disney", "entertainment", "streaming"] },
+  { symbol: "NFLX", description: "Netflix Inc", keywords: ["netflix", "streaming", "entertainment"] },
+  { symbol: "AMD", description: "Advanced Micro Devices Inc", keywords: ["amd", "cpu", "gpu", "tech", "chips"] },
+  { symbol: "INTC", description: "Intel Corporation", keywords: ["intel", "cpu", "chips", "tech"] },
+  { symbol: "CRM", description: "Salesforce Inc", keywords: ["salesforce", "crm", "cloud", "tech"] },
+  { symbol: "ORCL", description: "Oracle Corporation", keywords: ["oracle", "database", "cloud", "tech"] },
+  { symbol: "ADBE", description: "Adobe Inc", keywords: ["adobe", "photoshop", "creative", "tech"] },
+  { symbol: "PYPL", description: "PayPal Holdings Inc", keywords: ["paypal", "payment", "fintech"] },
+  { symbol: "UBER", description: "Uber Technologies Inc", keywords: ["uber", "rideshare", "delivery"] },
+  { symbol: "ABNB", description: "Airbnb Inc", keywords: ["airbnb", "travel", "rental"] },
+  { symbol: "SQ", description: "Block Inc", keywords: ["block", "square", "payment", "fintech"] },
+  { symbol: "SPOT", description: "Spotify Technology SA", keywords: ["spotify", "music", "streaming"] },
+  { symbol: "ZM", description: "Zoom Video Communications", keywords: ["zoom", "video", "conferencing"] },
+  { symbol: "SHOP", description: "Shopify Inc", keywords: ["shopify", "ecommerce", "tech"] },
+  { symbol: "SNAP", description: "Snap Inc", keywords: ["snap", "snapchat", "social"] },
+  { symbol: "PINS", description: "Pinterest Inc", keywords: ["pinterest", "social", "images"] },
+  { symbol: "PLTR", description: "Palantir Technologies Inc", keywords: ["palantir", "data", "analytics", "ai"] },
+  { symbol: "COIN", description: "Coinbase Global Inc", keywords: ["coinbase", "crypto", "exchange"] },
+  { symbol: "GME", description: "GameStop Corp", keywords: ["gamestop", "gaming", "retail"] },
+  { symbol: "AMC", description: "AMC Entertainment Holdings", keywords: ["amc", "movies", "theater"] },
+  { symbol: "NKE", description: "Nike Inc", keywords: ["nike", "shoes", "sports", "apparel"] },
+  { symbol: "SBUX", description: "Starbucks Corporation", keywords: ["starbucks", "coffee", "restaurant"] },
+  { symbol: "MCD", description: "McDonald's Corporation", keywords: ["mcdonalds", "fast food", "restaurant"] },
+  { symbol: "XOM", description: "Exxon Mobil Corporation", keywords: ["exxon", "mobil", "oil", "energy"] },
+  { symbol: "CVX", description: "Chevron Corporation", keywords: ["chevron", "oil", "energy"] },
+  { symbol: "BA", description: "Boeing Co", keywords: ["boeing", "airplane", "aerospace"] },
+  { symbol: "GE", description: "General Electric Co", keywords: ["general", "electric", "industrial"] },
+  { symbol: "F", description: "Ford Motor Company", keywords: ["ford", "car", "auto"] },
+  { symbol: "GM", description: "General Motors Co", keywords: ["general", "motors", "car", "auto"] },
+  { symbol: "T", description: "AT&T Inc", keywords: ["att", "telecom", "phone"] },
+  { symbol: "VZ", description: "Verizon Communications", keywords: ["verizon", "telecom", "phone"] },
+];
+
 export async function searchSymbols(query: string): Promise<{ symbol: string; description: string }[]> {
   try {
     const lowerQuery = query.toLowerCase();
@@ -161,25 +213,53 @@ export async function searchSymbols(query: string): Promise<{ symbol: string; de
       description: crypto.description,
     }));
     
-    // Also search Finnhub for stocks
-    const response = await fetch(
-      `${BASE_URL}/search?q=${encodeURIComponent(query)}&token=${FINNHUB_API_KEY}`
-    );
+    // Check for popular stock matches (by symbol, name, or keywords)
+    const popularMatches = POPULAR_STOCKS.filter(stock => 
+      stock.symbol.toLowerCase().includes(lowerQuery) ||
+      stock.description.toLowerCase().includes(lowerQuery) ||
+      stock.keywords.some(keyword => keyword.includes(lowerQuery))
+    ).map(stock => ({
+      symbol: stock.symbol,
+      description: stock.description,
+    }));
     
-    let stockResults: { symbol: string; description: string }[] = [];
-    
-    if (response.ok) {
-      const data = await response.json();
-      if (data.result) {
-        stockResults = data.result.slice(0, 8).map((item: any) => ({
-          symbol: item.symbol,
-          description: item.description,
-        }));
+    // Also try Finnhub API for additional stocks (with timeout)
+    let finnhubResults: { symbol: string; description: string }[] = [];
+    try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 3000);
+      
+      const response = await fetch(
+        `${BASE_URL}/search?q=${encodeURIComponent(query)}&token=${FINNHUB_API_KEY}`,
+        { signal: controller.signal }
+      );
+      clearTimeout(timeoutId);
+      
+      if (response.ok) {
+        const data = await response.json();
+        if (data.result) {
+          finnhubResults = data.result.slice(0, 8).map((item: any) => ({
+            symbol: item.symbol,
+            description: item.description,
+          }));
+        }
       }
+    } catch (finnhubError) {
+      // Finnhub failed or timed out, continue with local results
+      console.log("Finnhub search unavailable, using local results");
     }
     
-    // Combine crypto and stock results, crypto first if matched
-    return [...cryptoMatches, ...stockResults].slice(0, 10);
+    // Combine results: crypto first, then popular stocks, then Finnhub
+    // Remove duplicates by symbol
+    const seen = new Set<string>();
+    const allResults = [...cryptoMatches, ...popularMatches, ...finnhubResults];
+    const uniqueResults = allResults.filter(item => {
+      if (seen.has(item.symbol)) return false;
+      seen.add(item.symbol);
+      return true;
+    });
+    
+    return uniqueResults.slice(0, 10);
   } catch (error) {
     console.error("Error searching symbols:", error);
     return [];
