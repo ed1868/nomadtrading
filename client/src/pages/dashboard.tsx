@@ -37,10 +37,10 @@ export default function Dashboard() {
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 sm:gap-6">
           {/* Trading Column - Shows first on mobile */}
           <div className="lg:col-span-4 lg:order-2 space-y-4 sm:space-y-6">
+            <Watchlist onSelectStock={handleSelectStock} />
             <AITips />
             <StockSearch onSelectStock={handleSelectStock} />
             <TradingPanel selectedStock={selectedStock} />
-            <Watchlist onSelectStock={handleSelectStock} />
           </div>
 
           {/* Chart and Positions Column */}
