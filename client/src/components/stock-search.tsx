@@ -59,6 +59,13 @@ export function StockSearch({ onSelectStock }: StockSearchProps) {
 
   const { data: searchResults, isLoading: searchLoading } = useQuery<SearchResult[]>({
     queryKey: ["/api/search", debouncedQuery],
+    queryFn: async () => {
+      const res = await fetch(`/api/search?q=${encodeURIComponent(debouncedQuery)}`, {
+        credentials: "include",
+      });
+      if (!res.ok) throw new Error("Search failed");
+      return res.json();
+    },
     enabled: debouncedQuery.length >= 1,
   });
 
