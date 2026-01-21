@@ -8,6 +8,7 @@ import type { WatchlistItem, StockQuote } from "@shared/schema";
 
 interface WatchlistProps {
   onSelectStock: (symbol: string, quote: StockQuote) => void;
+  onOpenDetail?: (symbol: string) => void;
 }
 
 function formatCurrency(value: number): string {
@@ -28,7 +29,7 @@ interface WatchlistItemWithQuote extends WatchlistItem {
   quote?: StockQuote;
 }
 
-export function Watchlist({ onSelectStock }: WatchlistProps) {
+export function Watchlist({ onSelectStock, onOpenDetail }: WatchlistProps) {
   const { data: watchlist, isLoading } = useQuery<WatchlistItemWithQuote[]>({
     queryKey: ["/api/watchlist"],
     refetchInterval: 30000,
@@ -44,7 +45,9 @@ export function Watchlist({ onSelectStock }: WatchlistProps) {
   });
 
   const handleSelect = (item: WatchlistItemWithQuote) => {
-    if (item.quote) {
+    if (onOpenDetail) {
+      onOpenDetail(item.symbol);
+    } else if (item.quote) {
       onSelectStock(item.symbol, item.quote);
     }
   };

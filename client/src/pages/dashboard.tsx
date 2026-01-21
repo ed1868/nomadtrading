@@ -10,10 +10,12 @@ import { Watchlist } from "@/components/watchlist";
 import { TradeHistory } from "@/components/trade-history";
 import { AITips } from "@/components/ai-tips";
 import { StockTicker } from "@/components/stock-ticker";
+import { StockDetailModal } from "@/components/stock-detail-modal";
 import type { Portfolio, StockQuote } from "@shared/schema";
 
 export default function Dashboard() {
   const [selectedStock, setSelectedStock] = useState<{ symbol: string; quote: StockQuote } | null>(null);
+  const [detailSymbol, setDetailSymbol] = useState<string | null>(null);
 
   const { data: portfolio, isLoading: portfolioLoading } = useQuery<Portfolio>({
     queryKey: ["/api/portfolio"],
@@ -22,6 +24,10 @@ export default function Dashboard() {
 
   const handleSelectStock = (symbol: string, quote: StockQuote) => {
     setSelectedStock({ symbol, quote });
+  };
+
+  const handleOpenDetail = (symbol: string) => {
+    setDetailSymbol(symbol);
   };
 
   return (
@@ -37,7 +43,7 @@ export default function Dashboard() {
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 sm:gap-6">
           {/* Trading Column - Shows first on mobile */}
           <div className="lg:col-span-4 lg:order-2 space-y-4 sm:space-y-6">
-            <Watchlist onSelectStock={handleSelectStock} />
+            <Watchlist onSelectStock={handleSelectStock} onOpenDetail={handleOpenDetail} />
             <AITips />
             <StockSearch onSelectStock={handleSelectStock} />
             <TradingPanel selectedStock={selectedStock} />
@@ -48,7 +54,7 @@ export default function Dashboard() {
             <PortfolioChart />
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
-              <PositionsList onSelectStock={handleSelectStock} />
+              <PositionsList onSelectStock={handleSelectStock} onOpenDetail={handleOpenDetail} />
               <OptionsPositions />
             </div>
             
@@ -56,6 +62,9 @@ export default function Dashboard() {
           </div>
         </div>
       </div>
+
+      {/* Stock Detail Modal */}
+      <StockDetailModal symbol={detailSymbol} onClose={() => setDetailSymbol(null)} />
     </div>
   );
 }

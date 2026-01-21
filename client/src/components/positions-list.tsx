@@ -8,6 +8,7 @@ import type { Position, StockQuote } from "@shared/schema";
 
 interface PositionsListProps {
   onSelectStock: (symbol: string, quote: StockQuote) => void;
+  onOpenDetail?: (symbol: string) => void;
 }
 
 function formatCurrency(value: number): string {
@@ -24,26 +25,30 @@ function formatPercent(value: number): string {
   return `${sign}${value.toFixed(2)}%`;
 }
 
-export function PositionsList({ onSelectStock }: PositionsListProps) {
+export function PositionsList({ onSelectStock, onOpenDetail }: PositionsListProps) {
   const { data: positions, isLoading } = useQuery<Position[]>({
     queryKey: ["/api/positions"],
     refetchInterval: 30000, // Refresh every 30 seconds
   });
 
   const handleSelectPosition = async (position: Position) => {
-    // Create a quote from position data
-    const quote: StockQuote = {
-      symbol: position.symbol,
-      currentPrice: position.currentPrice,
-      change: position.currentPrice - position.averagePrice,
-      changePercent: ((position.currentPrice - position.averagePrice) / position.averagePrice) * 100,
-      high: position.currentPrice,
-      low: position.currentPrice,
-      open: position.currentPrice,
-      previousClose: position.averagePrice,
-      timestamp: Date.now(),
-    };
-    onSelectStock(position.symbol, quote);
+    if (onOpenDetail) {
+      onOpenDetail(position.symbol);
+    } else {
+      // Create a quote from position data
+      const quote: StockQuote = {
+        symbol: position.symbol,
+        currentPrice: position.currentPrice,
+        change: position.currentPrice - position.averagePrice,
+        changePercent: ((position.currentPrice - position.averagePrice) / position.averagePrice) * 100,
+        high: position.currentPrice,
+        low: position.currentPrice,
+        open: position.currentPrice,
+        previousClose: position.averagePrice,
+        timestamp: Date.now(),
+      };
+      onSelectStock(position.symbol, quote);
+    }
   };
 
   if (isLoading) {
