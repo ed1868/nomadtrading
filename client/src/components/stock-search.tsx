@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Search, Plus, TrendingUp, TrendingDown, Loader2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -11,6 +11,11 @@ import type { StockQuote, CompanyProfile } from "@shared/schema";
 
 interface StockSearchProps {
   onSelectStock: (symbol: string, quote: StockQuote) => void;
+}
+
+interface SearchResult {
+  symbol: string;
+  description: string;
 }
 
 function formatCurrency(value: number): string {
@@ -28,8 +33,34 @@ function formatPercent(value: number): string {
 }
 
 export function StockSearch({ onSelectStock }: StockSearchProps) {
-  const [searchSymbol, setSearchSymbol] = useState("");
+  const [searchQuery, setSearchQuery] = useState("");
   const [activeSymbol, setActiveSymbol] = useState<string | null>(null);
+  const [showDropdown, setShowDropdown] = useState(false);
+  const [debouncedQuery, setDebouncedQuery] = useState("");
+  const dropdownRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedQuery(searchQuery);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
+
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setShowDropdown(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const { data: searchResults, isLoading: searchLoading } = useQuery<SearchResult[]>({
+    queryKey: ["/api/search", debouncedQuery],
+    enabled: debouncedQuery.length >= 1,
+  });
 
   const { data: quote, isLoading: quoteLoading, error: quoteError } = useQuery<StockQuote>({
     queryKey: ["/api/quote", activeSymbol],
@@ -47,13 +78,23 @@ export function StockSearch({ onSelectStock }: StockSearchProps) {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/watchlist"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/ticker"] });
     },
   });
 
+  const handleSelectResult = (result: SearchResult) => {
+    setActiveSymbol(result.symbol);
+    setSearchQuery(result.symbol);
+    setShowDropdown(false);
+  };
+
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
-    if (searchSymbol.trim()) {
-      setActiveSymbol(searchSymbol.trim().toUpperCase());
+    if (searchResults && searchResults.length > 0) {
+      handleSelectResult(searchResults[0]);
+    } else if (searchQuery.trim()) {
+      setActiveSymbol(searchQuery.trim().toUpperCase());
+      setShowDropdown(false);
     }
   };
 
@@ -81,19 +122,56 @@ export function StockSearch({ onSelectStock }: StockSearchProps) {
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
-        <form onSubmit={handleSearch} className="flex gap-2">
-          <Input
-            type="text"
-            placeholder="Enter symbol (e.g., AAPL)"
-            value={searchSymbol}
-            onChange={(e) => setSearchSymbol(e.target.value.toUpperCase())}
-            className="font-mono"
-            data-testid="input-stock-search"
-          />
-          <Button type="submit" disabled={!searchSymbol.trim()} data-testid="button-search">
-            <Search className="h-4 w-4" />
-          </Button>
-        </form>
+        <div className="relative" ref={dropdownRef}>
+          <form onSubmit={handleSearch} className="flex gap-2">
+            <Input
+              ref={inputRef}
+              type="text"
+              placeholder="Search by name or symbol..."
+              value={searchQuery}
+              onChange={(e) => {
+                setSearchQuery(e.target.value);
+                setShowDropdown(true);
+              }}
+              onFocus={() => setShowDropdown(true)}
+              className="font-mono"
+              data-testid="input-stock-search"
+            />
+            <Button type="submit" disabled={!searchQuery.trim()} data-testid="button-search">
+              <Search className="h-4 w-4" />
+            </Button>
+          </form>
+
+          {showDropdown && searchQuery.length >= 1 && (
+            <div className="absolute z-50 w-full mt-1 bg-popover border border-border rounded-md shadow-lg max-h-60 overflow-y-auto">
+              {searchLoading ? (
+                <div className="p-3 text-center text-muted-foreground">
+                  <Loader2 className="h-4 w-4 animate-spin inline mr-2" />
+                  Searching...
+                </div>
+              ) : searchResults && searchResults.length > 0 ? (
+                searchResults.map((result) => (
+                  <button
+                    key={result.symbol}
+                    type="button"
+                    className="w-full px-3 py-2 text-left hover-elevate flex justify-between items-center"
+                    onClick={() => handleSelectResult(result)}
+                    data-testid={`search-result-${result.symbol}`}
+                  >
+                    <span className="font-mono font-semibold">{result.symbol}</span>
+                    <span className="text-sm text-muted-foreground truncate ml-2">
+                      {result.description}
+                    </span>
+                  </button>
+                ))
+              ) : debouncedQuery.length >= 1 ? (
+                <div className="p-3 text-center text-muted-foreground text-sm">
+                  No results found
+                </div>
+              ) : null}
+            </div>
+          )}
+        </div>
 
         {isLoading && (
           <div className="space-y-3">
@@ -106,7 +184,7 @@ export function StockSearch({ onSelectStock }: StockSearchProps) {
           </div>
         )}
 
-        {quoteError && (
+        {quoteError && activeSymbol && (
           <div className="text-center py-4 text-muted-foreground">
             <p>Could not find stock "{activeSymbol}"</p>
             <p className="text-sm mt-1">Please check the symbol and try again</p>
