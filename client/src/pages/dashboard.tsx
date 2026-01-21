@@ -9,6 +9,7 @@ import { OptionsPositions } from "@/components/options-positions";
 import { Watchlist } from "@/components/watchlist";
 import { TradeHistory } from "@/components/trade-history";
 import { AITips } from "@/components/ai-tips";
+import { StockTicker } from "@/components/stock-ticker";
 import type { Portfolio, StockQuote } from "@shared/schema";
 
 export default function Dashboard() {
@@ -25,6 +26,9 @@ export default function Dashboard() {
 
   return (
     <div className="min-h-screen bg-background pb-20 md:pb-0">
+      {/* Stock Ticker Banner */}
+      <StockTicker />
+      
       <div className="container mx-auto px-4 py-4 sm:py-6 space-y-4 sm:space-y-6">
         {/* Portfolio Summary */}
         <PortfolioSummary portfolio={portfolio} isLoading={portfolioLoading} />
