@@ -26,6 +26,19 @@ export interface CompanyProfile {
   weburl: string;
 }
 
+// News article from Finnhub
+export interface NewsArticle {
+  id: number;
+  category: string;
+  headline: string;
+  image: string;
+  related: string;
+  source: string;
+  summary: string;
+  url: string;
+  datetime: number;
+}
+
 // Trade types
 export type TradeType = "buy" | "sell";
 export type OptionType = "call" | "put";

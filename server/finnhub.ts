@@ -1,4 +1,4 @@
-import type { StockQuote, CompanyProfile } from "@shared/schema";
+import type { StockQuote, CompanyProfile, NewsArticle } from "@shared/schema";
 
 const FINNHUB_API_KEY = process.env.FINNHUB_API_KEY;
 const BASE_URL = "https://finnhub.io/api/v1";
@@ -198,6 +198,71 @@ const POPULAR_STOCKS = [
   { symbol: "T", description: "AT&T Inc", keywords: ["att", "telecom", "phone"] },
   { symbol: "VZ", description: "Verizon Communications", keywords: ["verizon", "telecom", "phone"] },
 ];
+
+export async function getMarketNews(category: string = "general"): Promise<NewsArticle[]> {
+  try {
+    const response = await fetch(
+      `${BASE_URL}/news?category=${encodeURIComponent(category)}&token=${FINNHUB_API_KEY}`
+    );
+    
+    if (!response.ok) {
+      console.error(`Finnhub news API error: ${response.status}`);
+      return [];
+    }
+    
+    const data = await response.json();
+    return data.slice(0, 20).map((item: any) => ({
+      id: item.id,
+      category: item.category || category,
+      headline: item.headline,
+      image: item.image || "",
+      related: item.related || "",
+      source: item.source,
+      summary: item.summary,
+      url: item.url,
+      datetime: item.datetime * 1000,
+    }));
+  } catch (error) {
+    console.error("Error fetching market news:", error);
+    return [];
+  }
+}
+
+export async function getCompanyNews(symbol: string): Promise<NewsArticle[]> {
+  try {
+    const today = new Date();
+    const lastMonth = new Date(today);
+    lastMonth.setMonth(lastMonth.getMonth() - 1);
+    
+    const fromDate = lastMonth.toISOString().split('T')[0];
+    const toDate = today.toISOString().split('T')[0];
+    
+    const response = await fetch(
+      `${BASE_URL}/company-news?symbol=${encodeURIComponent(symbol)}&from=${fromDate}&to=${toDate}&token=${FINNHUB_API_KEY}`
+    );
+    
+    if (!response.ok) {
+      console.error(`Finnhub company news API error: ${response.status}`);
+      return [];
+    }
+    
+    const data = await response.json();
+    return data.slice(0, 15).map((item: any) => ({
+      id: item.id,
+      category: "company",
+      headline: item.headline,
+      image: item.image || "",
+      related: item.related || symbol,
+      source: item.source,
+      summary: item.summary,
+      url: item.url,
+      datetime: item.datetime * 1000,
+    }));
+  } catch (error) {
+    console.error("Error fetching company news:", error);
+    return [];
+  }
+}
 
 export async function searchSymbols(query: string): Promise<{ symbol: string; description: string }[]> {
   try {
